@@ -13,7 +13,7 @@ Keep `ConsolidateForImport.bat` and `ConsolidateForImport.ps1` in the same folde
 
 Given `...\Grandparent\Parent\ABC_12345_Whatever` as the target:
 
-1. Moves every file from the other folders in `Parent` (including subfolders, hidden files) and any loose files in `Parent` into the target.
+1. Moves every file from the other folders in `Parent` (including subfolders, hidden files) and any loose files in `Parent` into the target. `Thumbs.db` and `desktop.ini` are not moved; they are deleted along with the folders that contain them.
 2. Deletes those emptied folders.
 3. Moves the target to `...\Grandparent\ABC_12345_FOR_IMPORT`.
 4. Deletes `Parent` after verifying it is empty.

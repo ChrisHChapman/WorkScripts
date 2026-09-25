@@ -12,6 +12,9 @@
          (e.g. ABC_12345_Scan_2026 -> ABC_12345_FOR_IMPORT).
       4. Deletes the original parent folder once it is verified empty.
 
+    Thumbs.db and desktop.ini files are not moved; they are deleted with the
+    folders that contain them.
+
     All error conditions are checked before anything is changed, and a summary
     is shown for confirmation.
 
@@ -24,6 +27,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Suffix = 'FOR_IMPORT'
+# Windows-generated files that are not moved; they are deleted along with
+# the folders that contain them. (-contains is case-insensitive.)
+$IgnoredNames = @('Thumbs.db', 'desktop.ini')
 
 function Fail([string]$Message) {
     Write-Host ''
@@ -84,13 +90,16 @@ if (Test-Path -LiteralPath $destination) {
 # Gather what will move.
 $siblingDirs = @(Get-ChildItem -LiteralPath $parent.FullName -Directory -Force |
     Where-Object { $_.FullName -ne $target.FullName })
-$looseFiles = @(Get-ChildItem -LiteralPath $parent.FullName -File -Force)
+$looseFiles = @(Get-ChildItem -LiteralPath $parent.FullName -File -Force |
+    Where-Object { $IgnoredNames -notcontains $_.Name })
 
+$ignoredCount = @(Get-ChildItem -LiteralPath $parent.FullName -File -Force |
+    Where-Object { $IgnoredNames -contains $_.Name }).Count
 $filesToMove = New-Object System.Collections.Generic.List[System.IO.FileInfo]
 foreach ($f in $looseFiles) { $filesToMove.Add($f) }
 foreach ($d in $siblingDirs) {
     foreach ($f in @(Get-ChildItem -LiteralPath $d.FullName -File -Recurse -Force)) {
-        $filesToMove.Add($f)
+        if ($IgnoredNames -contains $f.Name) { $ignoredCount++ } else { $filesToMove.Add($f) }
     }
 }
 
@@ -137,6 +146,9 @@ foreach ($d in $siblingDirs) {
 }
 Write-Host ''
 Write-Host "  Delete $($siblingDirs.Count) emptied folder(s) listed above."
+if ($ignoredCount -gt 0) {
+    Write-Host "  Delete $ignoredCount Thumbs.db / desktop.ini file(s) along with those folders (not moved)."
+}
 Write-Host "  Move and rename target to : $destination"
 Write-Host "  Delete parent folder      : $($parent.FullName)  (only if empty)"
 Write-Host ''
@@ -166,7 +178,8 @@ try {
 
     $step = 'deleting emptied folders'
     foreach ($d in $siblingDirs) {
-        $left = @(Get-ChildItem -LiteralPath $d.FullName -File -Recurse -Force)
+        $left = @(Get-ChildItem -LiteralPath $d.FullName -File -Recurse -Force |
+            Where-Object { $IgnoredNames -notcontains $_.Name })
         if ($left.Count -gt 0) {
             throw "Folder still contains $($left.Count) file(s) after moving: $($d.FullName)"
         }
@@ -179,14 +192,15 @@ try {
     Write-Host "Target is now: $destination"
 
     $step = 'deleting the parent folder'
-    $remaining = @(Get-ChildItem -LiteralPath $parent.FullName -Force)
+    $remaining = @(Get-ChildItem -LiteralPath $parent.FullName -Force |
+        Where-Object { $_.PSIsContainer -or $IgnoredNames -notcontains $_.Name })
     if ($remaining.Count -gt 0) {
         Write-Host ''
         Write-Host "WARNING: Parent folder is not empty, so it was NOT deleted: $($parent.FullName)" -ForegroundColor Yellow
         $remaining | ForEach-Object { Write-Host "  $($_.Name)" }
         exit 1
     }
-    Remove-Item -LiteralPath $parent.FullName
+    Remove-Item -LiteralPath $parent.FullName -Recurse -Force
     Write-Host "Deleted parent folder: $($parent.FullName)"
 }
 catch {
