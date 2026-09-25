@@ -7,7 +7,7 @@ Gathers all files around a target folder into that folder, moves it up one level
 Keep `ConsolidateForImport.bat` and `ConsolidateForImport.ps1` in the same folder, then either:
 
 - **Drag** the target folder onto `ConsolidateForImport.bat`, or
-- **Double-click** `ConsolidateForImport.bat` and pick the target folder.
+- **Double-click** `ConsolidateForImport.bat` and pick the target folder. The picker opens at `Z:\DICOM_TEMP\HDR Images for MIM` (if that drive is mapped); to change this, edit `$StartFolder` near the top of the `.ps1`.
 
 ## What it does
 

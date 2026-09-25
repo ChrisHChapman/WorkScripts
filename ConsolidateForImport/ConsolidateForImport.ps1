@@ -20,9 +20,13 @@
 
 .PARAMETER TargetPath
     The target folder. If omitted, a folder picker is shown.
+
+.PARAMETER StartFolder
+    Folder the picker opens at, if it exists.
 #>
 param(
-    [string]$TargetPath
+    [string]$TargetPath,
+    [string]$StartFolder = 'Z:\DICOM_TEMP\HDR Images for MIM'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -52,6 +56,9 @@ if ([string]::IsNullOrWhiteSpace($TargetPath)) {
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $dialog.Description = 'Select the TARGET folder'
     $dialog.ShowNewFolderButton = $false
+    if (Test-Path -LiteralPath $StartFolder -PathType Container) {
+        $dialog.SelectedPath = $StartFolder
+    }
     if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
         Write-Host 'No folder selected. Exiting.'
         exit 0
