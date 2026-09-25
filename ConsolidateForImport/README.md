@@ -7,7 +7,7 @@ Gathers all files around a target folder into that folder, moves it up one level
 Keep `ConsolidateForImport.bat` and `ConsolidateForImport.ps1` in the same folder, then either:
 
 - **Drag** the target folder onto `ConsolidateForImport.bat`, or
-- **Double-click** `ConsolidateForImport.bat` and pick the target folder. The picker opens at `Z:\DICOM_TEMP\HDR Images for MIM` (if that drive is mapped); to change this, edit `$StartFolder` near the top of the `.ps1`.
+- **Double-click** `ConsolidateForImport.bat` and pick the target folder. The picker opens at `Z:\DICOM_TEMP\HDR Images for MIM` (if that drive is mapped).
 
 ## What it does
 
@@ -20,6 +20,7 @@ Given `...\Grandparent\Parent\ABC_12345_Whatever` as the target:
 
 Before changing anything it checks for, and stops on:
 
+- target not inside a subfolder of `Z:\DICOM_TEMP\HDR Images for MIM` (i.e. it must be `...\HDR Images for MIM\<folder>\<target>` or deeper)
 - target name with fewer than two underscores
 - `ABC_12345_FOR_IMPORT` already existing in `Grandparent`
 - duplicate file names (among incoming files or against files already in the target)
@@ -30,3 +31,4 @@ It then shows a summary and asks `Proceed? (Y/N)`.
 
 - If a file is locked (e.g., open in another program) the script stops at that point; completed moves are not undone.
 - If Windows says the script is blocked, right-click the `.ps1` → Properties → check **Unblock**. If your organization's policy forbids running PowerShell scripts entirely, the `.bat` launcher cannot override that.
+- To use a different base folder, edit `$BaseFolder` near the top of the `.ps1`. The check compares paths as text, so the target must be selected through `Z:\...`, not the equivalent `\\server\share\...` path.

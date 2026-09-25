@@ -21,12 +21,13 @@
 .PARAMETER TargetPath
     The target folder. If omitted, a folder picker is shown.
 
-.PARAMETER StartFolder
-    Folder the picker opens at, if it exists.
+.PARAMETER BaseFolder
+    The target's parent folder must be inside this folder, so the target is
+    never moved above it. The folder picker also opens here, if it exists.
 #>
 param(
     [string]$TargetPath,
-    [string]$StartFolder = 'Z:\DICOM_TEMP\HDR Images for MIM'
+    [string]$BaseFolder = 'Z:\DICOM_TEMP\HDR Images for MIM'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,8 +57,8 @@ if ([string]::IsNullOrWhiteSpace($TargetPath)) {
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $dialog.Description = 'Select the TARGET folder'
     $dialog.ShowNewFolderButton = $false
-    if (Test-Path -LiteralPath $StartFolder -PathType Container) {
-        $dialog.SelectedPath = $StartFolder
+    if (Test-Path -LiteralPath $BaseFolder -PathType Container) {
+        $dialog.SelectedPath = $BaseFolder
     }
     if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) {
         Write-Host 'No folder selected. Exiting.'
@@ -80,6 +81,14 @@ if ($null -eq $parent -or $null -eq $parent.Parent) {
     Fail "Target must be at least two levels below a drive root so it can be moved up one level: $($target.FullName)"
 }
 $grandparent = $parent.Parent
+
+# The parent must be strictly inside the base folder; otherwise the base
+# folder itself (or something above it) would be emptied and deleted.
+$base = [IO.Path]::GetFullPath($BaseFolder).TrimEnd('\', '/')
+if (-not $parent.FullName.StartsWith($base + [IO.Path]::DirectorySeparatorChar,
+        [StringComparison]::OrdinalIgnoreCase)) {
+    Fail "Target must be inside a subfolder of '$base' (i.e. $base\<folder>\<target>): $($target.FullName)"
+}
 
 # Rename rule: keep through the second underscore, then append the suffix.
 $first = $target.Name.IndexOf('_')
